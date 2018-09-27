@@ -33,6 +33,7 @@ body {
   min-width: var(--min-width);
   color: var(--color-black);
   font-family: var(--base-font-family);
+  background-color: powderblue;
 }
 
 /* ----------------- Layout ----------------- */
@@ -58,6 +59,7 @@ body {
   display: flex;
   flex-direction: column;
   max-height: 100vh;
+
 }
 
 /* ----------------- Typography ----------------- */
@@ -193,10 +195,12 @@ button {
   grid-gap: var(--base-padding);
   overflow-x: hidden;
   overflow-y: auto;
+  background-color: #3184d1;
 }
 
 .cart h3 {
   margin: 0;
+
 }
 
 .cart__item {
