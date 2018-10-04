@@ -17,6 +17,8 @@ if (cart.length > 0) {
         const product = cartItem;
         insertItemToDOM(product);
 
+        saveCart();
+
         addToCardButtonsDOM.forEach(addToCardButtonDOM => {
             const productDOM = addToCardButtonDOM.parentNode;
 
@@ -45,7 +47,7 @@ addToCardButtonsDOM.forEach(addToCardButtonDOM => {
             //adding product to cart array
             cart.push(product);
             //saving to local storage
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCart();
             handleActionButtons(addToCardButtonDOM, product)
         }
 
@@ -64,6 +66,9 @@ function insertItemToDOM(product) {
                 <button class="btn btn--primary btn--small" data-action="INCREASE_ITEM">&plus;</button>
                 <button class="btn btn--danger btn--small" data-action="REMOVE_ITEM">&times;</button>
                 </div>`);
+
+    addCartFooter();
+
 }
 
 function handleActionButtons(addToCardButtonDOM, product) {
@@ -94,7 +99,7 @@ function increaseItem(product, cartItemDom) {
             cartItem.quantity++;
             cartItemDom.querySelector('.cart_item_quantity').innerText = cartItem.quantity;
             cartItemDom.querySelector('[data-action="DECREASE_ITEM"]').classList.remove("btn--danger");
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCart();
         }
     });
 }
@@ -105,10 +110,10 @@ function decreaseItem(product, cartItemDom, addToCardButtonDOM) {
             if (cartItem.quantity > 1) {
                 cartItem.quantity--;
                 cartItemDom.querySelector('.cart_item_quantity').innerText = cartItem.quantity;
-                localStorage.setItem('cart', JSON.stringify(cart));
+                saveCart()
             }
             else {
-                removeItem(product, addToCardButtonDOM)
+                removeItem(product,cartItemDom, addToCardButtonDOM)
             }
             if (cartItem.quantity === 1) {
                 cartItemDom.querySelector('[data-action="DECREASE_ITEM"]').classList.add("btn--danger");
@@ -123,7 +128,106 @@ function removeItem(product, cartItemDom, addToCardButtonDOM) {
     cartItemDom.classList.add('cart__item--removed');//adding a class to the this element
     setTimeout(() => cartItemDom.remove(), 300);
     cart = cart.filter(cartItem => cartItem.name !== product.name)//will return everything that not equal to product name
-    localStorage.setItem('cart', JSON.stringify(cart));
+    saveCart();
     addToCardButtonDOM.innerText = 'Add To Cart';
     addToCardButtonDOM.disabled = false;
+
+    //this code is removing the cart footer payment if our cart is empty
+    if (cart.length<1){
+        document.querySelector('.cart-footer').remove();
+    }
 }
+
+function addCartFooter() {
+    if(document.querySelector('.cart-footer')===null){
+        //any time someone add something in the card then we also add the buttons for them to pay or clear the card
+        cartDOM.insertAdjacentHTML('afterend',`
+        <div class="cart-footer">
+            <button class="btn btn--danger" data-action="CLEAR_CART"> Clear cart</button>
+            <button class="btn btn--primary" data-action="CHECKOUTT"> Pay</button>
+        </div>
+    `);
+        document.querySelector('[data-action="CLEAR_CART"]').addEventListener('click',()=> clearCart())
+        document.querySelector('[data-action="CHECKOUTT"]').addEventListener('click',()=> checkout())
+    }
+
+
+}
+
+function clearCart() {
+    cartDOM.querySelectorAll('.cart__item').forEach(cartItemDOM=>{
+        cartItemDOM.classList.add('cart__item--removed');//adding a class to the this element
+        setTimeout(() => cartItemDOM.remove(), 300);
+    });
+
+    localStorage.removeItem('cart');
+    document.querySelector('.cart-footer').remove();
+    cart=[];
+
+    addToCardButtonsDOM.forEach(addToCardButtonDOM=>{
+        addToCardButtonDOM.innerText = 'Add To Cart';
+        addToCardButtonDOM.disabled = false;
+    })
+
+}
+
+function checkout() {
+    let paypalForm=`
+   <form id="paypal-form" action="https://www.paypal.com/cgi-bin/webscr" method="post">
+        <input type="hidden" name="cmd" value="_cart">
+        <input type="hidden" name="upload" value="1">
+        <input type="hidden" name="business" value="adrian@webdev.tube">
+        `
+
+    cart.forEach((cartItem,index)=>{
+        ++index;
+        paypalForm+=`
+        <input type="hidden" name="item_name_${index}" value="${cartItem.name}">
+        <input type="hidden" name="quantity_${index}" value="${cartItem.quantity}">
+        <input type="hidden" name="amount_${index}" value="${cartItem.price}">
+        `
+    });
+       /* <input type="hidden" name="business" value="seller@dezignerfotos.com">
+        <input type="hidden" name="item_name_1" value="Item Name 1">
+        <input type="hidden" name="amount_1" value="1.00">
+        <input type="hidden" name="shipping_1" value="1.75">
+        <input type="hidden" name="item_name_2" value="Item Name 2">
+        <input type="hidden" name="amount_2" value="2.00">
+        <input type="hidden" name="shipping_2" value="2.50">
+        <input type="submit" value="PayPal">*/
+       paypalForm+=`
+        <input type="submit" value="PayPal">
+    </form>
+    <div class="overlay"></div>`;
+       document.querySelector('body').insertAdjacentHTML('beforeend',paypalForm);
+       document.getElementById('paypal-form').submit();
+}
+
+function cardTotal() {
+    let total=0;
+    cart.forEach(cartItem=>total+=(cartItem.quantity*cartItem.price));
+    document.querySelector('[data-action="CHECKOUTT"]').innerHTML=`Pay $ ${total}`
+}
+
+function saveCart() {
+    localStorage.setItem('cart', JSON.stringify(cart));
+    cardTotal();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
